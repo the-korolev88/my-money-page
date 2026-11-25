@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Мой портфель" />
+  <title>Мой портфель</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #181b22;
+      --card-hover: #21252f;
+      --border: #2a2f3c;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --green: #10b981;
+      --red: #ef4444;
+      --accent: #3b82f6;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top, 16px) 16px calc(env(safe-area-inset-bottom, 20px) + 20px);
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0 16px;
+    }
+    h1 { font-size: 20px; margin: 0; font-weight: 700; }
+    .btn-add {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--card);
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+    .tab {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 8px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab.active { background: var(--card-hover); color: var(--text); }
+    .chart-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .donut-wrap { position: relative; width: 220px; height: 220px; }
+    svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+    circle.seg {
+      fill: none;
+      stroke-width: 28;
+      cursor: pointer;
+      transition: stroke-width 0.2s, opacity 0.2s;
+    }
+    .center-info {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 34px;
+      cursor: pointer;
+    }
+    .center-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; line-height: 1.2; }
+    .center-val { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .center-sub { font-size: 12px; margin-top: 3px; font-weight: 600; }
+    .list { display: flex; flex-direction: column; gap: 8px; }
+    .item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .item.selected { border-color: var(--accent); background: var(--card-hover); }
+    .item-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .item-info { min-width: 0; }
+    .item-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .item-nums { text-align: right; }
+    .item-sum { font-size: 14px; font-weight: 600; }
+    .item-pnl { font-size: 11px; margin-top: 2px; }
+    .edit-btn {
+      background: var(--card-hover);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .reset-wrap { text-align: center; margin-top: 20px; }
+    .btn-reset {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 50;
+    }
+    .modal-bg.open { display: flex; }
+    .modal {
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      padding: 20px 16px calc(env(safe-area-inset-bottom, 16px) + 16px);
+      width: 100%;
+      max-width: 480px;
+    }
+    .modal h2 { margin: 0 0 14px; font-size: 17px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .field input, .field select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+    .qty-row { display: flex; gap: 8px; }
+    .qty-btn {
+      background: var(--card-hover);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 44px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-save { flex: 1; background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 15px; }
+    .btn-del { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); padding: 12px 14px; border-radius: 12px; font-weight: 600; }
+    .btn-cancel { background: var(--card-hover); color: var(--text); border: none; padding: 12px 14px; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Мой портфель</h1>
+    <button class="btn-add" onclick="openAdd()">+ Добавить</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-assets" onclick="setMode('assets')">По активам</button>
+    <button class="tab" id="tab-classes" onclick="setMode('classes')">По классам</button>
+  </div>
+
+  <div class="chart-box">
+    <div class="donut-wrap">
+      <svg viewBox="0 0 200 200" id="donut"></svg>
+      <div class="center-info" onclick="selectItem(null)">
+        <div class="center-label" id="c-label">Общая сумма</div>
+        <div class="center-val" id="c-val">0 ₽</div>
+        <div class="center-sub" id="c-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="reset-wrap">
+    <button class="btn-reset" onclick="resetData()">Сбросить к исходным данным</button>
+  </div>
+
+  <div class="modal-bg" id="modal-bg" onclick="if(event.target===this) closeModal()">
+    <div class="modal">
+      <h2 id="m-title">Редактировать актив</h2>
+      <div class="field">
+        <label>Название</label>
+        <input type="text" id="f-name" />
+      </div>
+      <div class="field">
+        <label>Класс актива</label>
+        <select id="f-cls">
+          <option value="Облигации">Облигации</option>
+          <option value="Акции">Акции</option>
+          <option value="Фонды (БПИФ)">Фонды (БПИФ)</option>
+          <option value="Кэш">Кэш</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Количество (шт. / руб.)</label>
+        <div class="qty-row">
+          <button class="qty-btn" type="button" onclick="stepQty(-1)">−</button>
+          <input type="number" step="any" id="f-qty" />
+          <button class="qty-btn" type="button" onclick="stepQty(1)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Цена за 1 шт. (₽)</label>
+        <input type="number" step="any" id="f-price" />
+      </div>
+      <div class="field">
+        <label>Прибыль / убыток (₽)</label>
+        <input type="number" step="any" id="f-pnl" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-del" id="btn-del" onclick="deleteItem()">Удалить</button>
+        <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+        <button class="btn-save" onclick="saveItem()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = ['#4DA6FF', '#FFD166', '#06D6A0', '#EF476F', '#9B5DE5', '#00BBF9', '#A0AAB2', '#F97316'];
+    const DEFAULT_DATA = [
+      { id: 1, name: 'ОФЗ 26248', cls: 'Облигации', qty: 9, price: 840.02, pnl: 87.88 },
+      { id: 2, name: 'Т-Технологии', cls: 'Акции', qty: 13, price: 276.88, pnl: -197.08 },
+      { id: 3, name: 'Сбербанк России', cls: 'Акции', qty: 12, price: 285.89, pnl: -41.02 },
+      { id: 4, name: 'Фонд Топ Российских акций', cls: 'Фонды (БПИФ)', qty: 60, price: 16.712, pnl: -63.50 },
+      { id: 5, name: 'Фонд Корпоративные облигации', cls: 'Фонды (БПИФ)', qty: 25, price: 19.2852, pnl: -3.23 },
+      { id: 6, name: 'Фонд Сберегательный', cls: 'Фонды (БПИФ)', qty: 19, price: 19.9274, pnl: 0.34 },
+      { id: 7, name: 'Рубли', cls: 'Кэш', qty: 38.19, price: 1, pnl: 0 }
+    ];
+
+    let items = JSON.parse(localStorage.getItem('my_portfolio_v1')) || JSON.parse(JSON.stringify(DEFAULT_DATA));
+    let mode = 'assets';
+    let selectedIdx = null;
+    let editId = null;
+
+    function fmt(n) {
+      return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽';
+    }
+
+    function saveStorage() {
+      localStorage.setItem('my_portfolio_v1', JSON.stringify(items));
+    }
+
+    function getGrouped() {
+      if (mode === 'assets') {
+        return items.map((it, idx) => ({
+          ...it,
+          sum: it.qty * it.price,
+          color: COLORS[idx % COLORS.length]
+        }));
+      }
+      const map = {};
+      items.forEach(it => {
+        if (!map[it.cls]) map[it.cls] = { name: it.cls, cls: it.cls, sum: 0, pnl: 0, count: 0 };
+        map[it.cls].sum += it.qty * it.price;
+        map[it.cls].pnl += it.pnl;
+        map[it.cls].count += 1;
+      });
+      return Object.values(map).map((g, idx) => ({ ...g, color: COLORS[idx % COLORS.length] }));
+    }
+
+    function setMode(m) {
+      mode = m;
+      selectedIdx = null;
+      document.getElementById('tab-assets').classList.toggle('active', m === 'assets');
+      document.getElementById('tab-classes').classList.toggle('active', m === 'classes');
+      render();
+    }
+
+    function selectItem(idx) {
+      selectedIdx = (selectedIdx === idx) ? null : idx;
+      render();
+    }
+
+    function render() {
+      const data = getGrouped();
+      const total = data.reduce((s, d) => s + d.sum, 0);
+      const totalPnl = data.reduce((s, d) => s + d.pnl, 0);
+
+      const cLabel = document.getElementById('c-label');
+      const cVal = document.getElementById('c-val');
+      const cSub = document.getElementById('c-sub');
+
+      if (selectedIdx !== null && data[selectedIdx]) {
+        const d = data[selectedIdx];
+        const pct = total > 0 ? (d.sum / total * 100).toFixed(1) : 0;
+        cLabel.textContent = d.name;
+        cVal.textContent = fmt(d.sum);
+        cSub.textContent = `Доля: ${pct}%`;
+        cSub.className = 'center-sub';
+        cSub.style.color = d.color;
+      } else {
+        cLabel.textContent = 'Общая сумма';
+        cVal.textContent = fmt(total);
+        const sign = totalPnl > 0 ? '+' : '';
+        cSub.textContent = `${sign}${fmt(totalPnl)}`;
+        cSub.style.color = '';
+        cSub.className = 'center-sub ' + (totalPnl >= 0 ? 'pos' : 'neg');
+      }
+
+      const svg = document.getElementById('donut');
+      svg.innerHTML = '';
+      const r = 78;
+      const circ = 2 * Math.PI * r;
+      let offset = 0;
+
+      data.forEach((d, idx) => {
+        if (d.sum <= 0) return;
+        const pct = d.sum / total;
+        const len = pct * circ;
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', 100);
+        circle.setAttribute('cy', 100);
+        circle.setAttribute('r', r);
+        circle.setAttribute('class', 'seg');
+        circle.setAttribute('stroke', d.color);
+        circle.setAttribute('stroke-dasharray', `${Math.max(0, len - 2)} ${circ}`);
+        circle.setAttribute('stroke-dashoffset', -offset);
+        if (selectedIdx !== null) {
+          circle.style.opacity = (selectedIdx === idx) ? '1' : '0.3';
+          if (selectedIdx === idx) circle.style.strokeWidth = '34';
+        }
+        circle.onclick = () => selectItem(idx);
+        svg.appendChild(circle);
+        offset += len;
+      });
+
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      data.forEach((d, idx) => {
+        const pct = total > 0 ? (d.sum / total * 100).toFixed(1) : '0.0';
+        const sign = d.pnl > 0 ? '+' : '';
+        const pnlClass = d.pnl >= 0 ? 'pos' : 'neg';
+        const meta = mode === 'assets'
+          ? `${d.qty} шт. · ${pct}%`
+          : `Позиций: ${d.count} · ${pct}%`;
+
+        const el = document.createElement('div');
+        el.className = 'item' + (selectedIdx === idx ? ' selected' : '');
+        el.onclick = () => selectItem(idx);
+        el.innerHTML = `
+          <div class="item-left">
+            <span class="dot" style="background:${d.color}"></span>
+            <div class="item-info">
+              <div class="item-name">${d.name}</div>
+              <div class="item-meta">${meta}</div>
+            </div>
+          </div>
+          <div class="item-right">
+            <div class="item-nums">
+              <div class="item-sum">${fmt(d.sum)}</div>
+              <div class="item-pnl ${pnlClass}">${sign}${fmt(d.pnl)}</div>
+            </div>
+            ${mode === 'assets' ? `<button class="edit-btn" onclick="event.stopPropagation(); openEdit(${d.id})">✎</button>` : ''}
+          </div>
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    function openEdit(id) {
+      const it = items.find(x => x.id === id);
+      if (!it) return;
+      editId = id;
+      document.getElementById('m-title').textContent = 'Редактировать актив';
+      document.getElementById('f-name').value = it.name;
+      document.getElementById('f-cls').value = it.cls;
+      document.getElementById('f-qty').value = it.qty;
+      document.getElementById('f-price').value = it.price;
+      document.getElementById('f-pnl').value = it.pnl;
+      document.getElementById('btn-del').style.display = 'block';
+      document.getElementById('modal-bg').classList.add('open');
+    }
+
+    function openAdd() {
+      editId = null;
+      document.getElementById('m-title').textContent = 'Новый актив';
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-cls').value = 'Акции';
+      document.getElementById('f-qty').value = 1;
+      document.getElementById('f-price').value = 100;
+      document.getElementById('f-pnl').value = 0;
+      document.getElementById('btn-del').style.display = 'none';
+      document.getElementById('modal-bg').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-bg').classList.remove('open');
+    }
+
+    function stepQty(delta) {
+      const inp = document.getElementById('f-qty');
+      const val = Math.max(0, (parseFloat(inp.value) || 0) + delta);
+      inp.value = Number(val.toFixed(4));
+    }
+
+    function saveItem() {
+      const name = document.getElementById('f-name').value.trim() || 'Актив';
+      const cls = document.getElementById('f-cls').value;
+      const qty = parseFloat(document.getElementById('f-qty').value) || 0;
+      const price = parseFloat(document.getElementById('f-price').value) || 0;
+      const pnl = parseFloat(document.getElementById('f-pnl').value) || 0;
+
+      if (editId !== null) {
+        const idx = items.findIndex(x => x.id === editId);
+        if (idx > -1) items[idx] = { id: editId, name, cls, qty, price, pnl };
+      } else {
+        items.push({ id: Date.now(), name, cls, qty, price, pnl });
+      }
+      saveStorage();
+      closeModal();
+      render();
+    }
+
+    function deleteItem() {
+      if (editId !== null) {
+        items = items.filter(x => x.id !== editId);
+        selectedIdx = null;
+        saveStorage();
+      }
+      closeModal();
+      render();
+    }
+
+    function resetData() {
+      if (confirm('Вернуть исходные данные со скриншота?')) {
+        items = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        selectedIdx = null;
+        saveStorage();
+        render();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
